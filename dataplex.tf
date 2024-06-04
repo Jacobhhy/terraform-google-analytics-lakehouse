@@ -45,6 +45,88 @@ resource "google_dataplex_lake" "gcp_primary" {
 
 }
 
+resource "google_dataplex_lake" "gcp_manglaria" {
+  location     = var.region
+  name         = "gcp-manglaria-lake"
+  description  = "gcp manglaria lake"
+  display_name = "gcp manglaria lake"
+
+  labels = {
+    gcp-lake = "exists"
+  }
+
+  project = module.project-services.project_id
+
+  depends_on = [
+    google_project_iam_member.dataplex_bucket_access
+  ]
+
+}
+
+#zone - Bronze layer
+resource "google_dataplex_zone" "gcp_manglaria_bronze" {
+  discovery_spec {
+    enabled = true
+  }
+
+  lake     = google_dataplex_lake.gcp_manglaria.name
+  location = var.region
+  name     = "gcp-manglaria-bronze"
+
+  resource_spec {
+    location_type = "SINGLE_REGION"
+  }
+
+  type         = "RAW"
+  description  = "Bronze layer for manglaria data"
+  display_name = "Bronze"
+  labels       = {}
+  project      = module.project-services.project_id
+
+}
+
+#zone - Silver layer
+resource "google_dataplex_zone" "gcp_manglaria_silver" {
+  discovery_spec {
+    enabled = true
+  }
+
+  lake     = google_dataplex_lake.gcp_manglaria.name
+  location = var.region
+  name     = "gcp-manglaria-silver"
+
+  resource_spec {
+    location_type = "SINGLE_REGION"
+  }
+
+  type         = "CURATED"
+  description  = "Silver layer for manglaria data"
+  display_name = "Silver"
+  labels       = {}
+  project      = module.project-services.project_id
+}
+
+#zone - Gold layer
+resource "google_dataplex_zone" "gcp_manglaria_gold" {
+  discovery_spec {
+    enabled = true
+  }
+
+  lake     = google_dataplex_lake.gcp_manglaria.name
+  location = var.region
+  name     = "gcp-manglaria-gold"
+
+  resource_spec {
+    location_type = "SINGLE_REGION"
+  }
+
+  type         = "CURATED"
+  description  = "Gold layer for manglaria data"
+  display_name = "Gold"
+  labels       = {}
+  project      = module.project-services.project_id
+}
+
 #zone - raw
 resource "google_dataplex_zone" "gcp_primary_raw" {
   discovery_spec {
@@ -180,13 +262,103 @@ resource "google_dataplex_asset" "gcp_primary_tables" {
   depends_on = [time_sleep.wait_after_copy_data]
 }
 
+resource "google_dataplex_asset" "gcp_manglaria_images" {
+  name     = "gcp-manglaria-images"
+  location = var.region
+
+  lake          = google_dataplex_lake.gcp_manglaria.name
+  dataplex_zone = google_dataplex_zone.gcp_manglaria_bronze.name
+
+  discovery_spec {
+    enabled = true
+  }
+
+  resource_spec {
+    name             = "projects/${module.project-services.project_id}/buckets/${google_storage_bucket.manglaria_images_bucket.name}"
+    type             = "STORAGE_BUCKET"
+    read_access_mode = "MANAGED"
+  }
+
+  project    = module.project-services.project_id
+  depends_on = [time_sleep.wait_after_copy_data]
+
+}
+resource "google_dataplex_asset" "gcp_manglaria_lidar" {
+  name     = "gcp-manglaria-lidar"
+  location = var.region
+
+  lake          = google_dataplex_lake.gcp_manglaria.name
+  dataplex_zone = google_dataplex_zone.gcp_manglaria_bronze.name
+
+  discovery_spec {
+    enabled = true
+  }
+
+  resource_spec {
+    name             = "projects/${module.project-services.project_id}/buckets/${google_storage_bucket.manglaria_lidar_bucket.name}"
+    type             = "STORAGE_BUCKET"
+    read_access_mode = "MANAGED"
+  }
+
+  project    = module.project-services.project_id
+  depends_on = [time_sleep.wait_after_copy_data]
+
+}
+
+resource "google_dataplex_asset" "gcp_manglaria_weather_stations" {
+  name     = "gcp-manglaria-weather-stations"
+  location = var.region
+
+  lake          = google_dataplex_lake.gcp_manglaria.name
+  dataplex_zone = google_dataplex_zone.gcp_manglaria_bronze.name
+
+  discovery_spec {
+    enabled = true
+  }
+
+  resource_spec {
+    name             = "projects/${module.project-services.project_id}/buckets/${google_storage_bucket.manglaria_weather_stations_bucket.name}"
+    type             = "STORAGE_BUCKET"
+    read_access_mode = "MANAGED"
+  }
+
+  project    = module.project-services.project_id
+  depends_on = [time_sleep.wait_after_copy_data]
+
+}
+
+resource "google_dataplex_asset" "gcp_mangrove_demo" {
+  name     = "gcp-mangrove-demo"
+  location = var.region
+
+  lake          = google_dataplex_lake.gcp_manglaria.name
+  dataplex_zone = google_dataplex_zone.gcp_manglaria_silver.name
+
+  discovery_spec {
+    enabled = true
+  }
+
+  resource_spec {
+    name             = "projects/${module.project-services.project_id}/buckets/${google_storage_bucket.mangrove_demo_bucket.name}"
+    type             = "STORAGE_BUCKET"
+    read_access_mode = "MANAGED"
+  }
+
+  project    = module.project-services.project_id
+  depends_on = [time_sleep.wait_after_copy_data]
+
+}
 # Add a wait for Dataplex Discovery.
-# Discovery on this data generally takes 6-8 minutes.
+# Discovery on this data generally takes 20 minutes.
 resource "time_sleep" "wait_for_dataplex_discovery" {
   depends_on = [
     google_dataplex_asset.gcp_primary_tables,
     google_dataplex_asset.gcp_primary_ga4_obfuscated_sample_ecommerce,
-    google_dataplex_asset.gcp_primary_textocr
+    google_dataplex_asset.gcp_primary_textocr,
+    google_dataplex_asset.gcp_manglaria_images,
+    google_dataplex_asset.gcp_manglaria_lidar,
+    google_dataplex_asset.gcp_manglaria_weather_stations,
+    google_dataplex_asset.gcp_mangrove_demo
   ]
 
   create_duration = "600s"

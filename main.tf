@@ -127,6 +127,60 @@ resource "google_storage_bucket" "dataplex_bucket" {
   force_destroy               = var.force_destroy
 }
 
+resource "google_storage_bucket" "manglaria_images_bucket" {
+  name                        = "gcp-${var.use_case_short}-manglaria-images-${random_id.id.hex}"
+  project                     = module.project-services.project_id
+  location                    = var.region
+  uniform_bucket_level_access = true
+  force_destroy               = var.force_destroy
+}
+
+resource "google_storage_bucket" "manglaria_lidar_bucket" {
+  name                        = "gcp-${var.use_case_short}-manglaria-lidar-${random_id.id.hex}"
+  project                     = module.project-services.project_id
+  location                    = var.region
+  uniform_bucket_level_access = true
+  force_destroy               = var.force_destroy
+}
+
+resource "google_storage_bucket" "manglaria_weather_stations_bucket" {
+  name                        = "gcp-${var.use_case_short}-manglaria-weather-stations-${random_id.id.hex}"
+  project                     = module.project-services.project_id
+  location                    = var.region
+  uniform_bucket_level_access = true
+  force_destroy               = var.force_destroy
+}
+
+resource "google_storage_bucket" "mangrove_demo_bucket" {
+  name                        = "gcp-${var.use_case_short}-mangrove-demo-${random_id.id.hex}"
+  project                     = module.project-services.project_id
+  location                    = var.region
+  uniform_bucket_level_access = true
+  force_destroy               = var.force_destroy
+}
+
+resource "google_storage_bucket_object" "weather_demo_file" {
+  bucket = google_storage_bucket.mangrove_demo_bucket.name
+  name   = "weather_data/FL-weather-stations-11-02-2004.parquet"
+  source = "${path.module}/src/parquet/FL-weather-stations-11-02-2004.parquet"
+
+  depends_on = [
+    google_storage_bucket.mangrove_demo_bucket,
+    google_dataplex_zone.gcp_manglaria_silver
+  ]
+}
+
+resource "google_storage_bucket_object" "mangrove_demo_file" {
+  bucket = google_storage_bucket.mangrove_demo_bucket.name
+  name   = "mangrove_measurements/North_South_America_tree_measurements.parquet"
+  source = "${path.module}/src/parquet/North_South_America_tree_measurements.parquet"
+
+  depends_on = [
+    google_storage_bucket.mangrove_demo_bucket,
+    google_dataplex_zone.gcp_manglaria_silver
+  ]
+}
+
 resource "google_storage_bucket_object" "bigquery_file" {
   bucket = google_storage_bucket.provisioning_bucket.name
   name   = "bigquery.py"

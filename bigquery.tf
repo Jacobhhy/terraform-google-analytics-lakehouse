@@ -111,6 +111,22 @@ resource "google_bigquery_job" "create_view_ecommerce" {
   depends_on = [time_sleep.wait_for_dataplex_discovery]
 }
 
+resource "google_bigquery_job" "create_view_mangrove_demo" {
+  project  = module.project-services.project_id
+  location = var.region
+  job_id   = "create_view_mangrove_demo_${random_id.id.hex}"
+
+  query {
+    query = file("${path.module}/src/sql/view_mangrove.sql")
+
+    # Since the query contains DML, these must be set to empty.
+    create_disposition = ""
+    write_disposition  = ""
+  }
+
+  depends_on = [time_sleep.wait_for_dataplex_discovery]
+}
+
 # resource "time_sleep" "check_create_view_ecommerce" {
 #   create_duration = "30s"
 
